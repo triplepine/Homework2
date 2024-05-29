@@ -1,0 +1,198 @@
+---
+title: "Programming in Base R"
+format: html
+editor: visual
+---
+
+## Task 1: Basic Vector practice
+### 1.Create two vectors
+```{r}
+pre_bp <-c(130,128,116,124,133,134,118,126,114,127,141,138,128,140,137,131,120,128,139,135)
+post_bp <-c(114,98,113,99,107,116,113,111,119,117,101,119,130,122,106,106,124,102,117,113)
+```
+
+### 2.Assign names to the vector elements 
+```{r}
+paste("Subject", 1:20,sep="_")
+names(pre_bp) <-c(paste("Subject", 1:20,sep="_"))
+names(post_bp) <-c(paste("Subject", 1:20,sep="_"))
+```
+
+### 3.Calculate the change in blood pressure
+```{r}
+diff_bp <- c(pre_bp - post_bp)
+```
+
+### 4.Calculate the average decrease in blood pressure
+```{r}
+mean(diff_bp)
+```
+
+### 5. Determine positive change
+```{r}
+which(diff_bp>0)
+```
+
+### 6.Subset the vector of differences only return positive change
+```{r}
+positive_change <- diff_bp[c(which(diff_bp>0))]
+```
+
+### 7. Calculate average decrease in blood pressure
+```{r}
+mean(positive_change)
+```
+
+## Task 2: Basic Data Frame practice
+### 1. Create a data frame object with 4 columns
+
+```{r}
+patient <-c(paste("Subject", 1:20,sep="_"))
+bp_df <-data.frame(patient,pre_bp,post_bp,diff_bp,row.names=NULL)
+```
+
+### 2. Return only rows with negative diff_bp
+```{r}
+`[`(bp_df,bp_df$diff_bp<0, ) 
+bp_df[bp_df$diff_bp<0, ]
+subset(bp_df,diff_bp<0)
+```
+### 3. Add a new column (TRUE if post_bp<120)
+
+```{r}
+bp_df$post_bp_less_120 <-ifelse(bp_df$post_bp<120,TRUE,FALSE)
+```
+
+### 4. Print the data frame out
+```{r}
+knitr::kable(bp_df,align='c',"simple")
+```
+
+## Task 3: List practice
+### 1. Create a new data frame
+```{r}
+patient <-paste("Subject", 1:10,sep="_")
+pre_placebo <-c(138,135,147,117,152,134,114,121,131,130)
+post_placebo <-c(105,136,123,130,134,143,135,139,120,124)
+diff_placebo <- pre_placebo - post_placebo
+placebo_df <-data.frame(patient,pre_bp=pre_placebo,post_bp=post_placebo,diff_bp=diff_placebo)
+placebo_df$post_bp_less_120 <-ifelse(placebo_df$post_bp<120,TRUE,FALSE)
+```
+
+### 2. Create and store a list with two elements
+```{r}
+my_list <- list(treatment=bp_df, placebo=placebo_df)
+```
+
+### 3. Access the first list element using three different types of syntax
+```{r}
+my_list[1]
+my_list[[1]]
+my_list$treatment
+```
+
+### 4. In one line, access the placebo data frame, pre_bp column
+```{r}
+my_list$placebo$pre_bp
+```
+
+
+## Task 4: Control Flow Practice
+### 1.create a new column called status
+```{r}
+my_list$treatment$status <- character(20)
+my_list$placebo$status <-character(10)
+```
+### 2. create a for loop and use if/then/else logic to create status values for non-placebo data frame
+```{r}
+# my_list$treatment$status <- ifelse(my_list$treatment$post_bp<=120,"optimal",ifelse(my_list$treatment$post_bp<=130,"borderline","high"))
+
+for (i in 1:20){
+  if (my_list$treatment$post_bp[i] <=120) {
+    my_list$treatment$status[i]<-"optimal"
+  } else if (my_list$treatment$post_bp[i] >130) {
+    my_list$treatment$status[i]<-"high"
+  } else {
+    my_list$treatment$status[i]<-"borderline"
+  }
+}
+my_list$treatment$status
+```
+### 3.create a for loop and use if/then/else logic to create status values for placebo data frame
+```{r}
+for (i in 1:10) {
+  if (my_list$placebo$post_bp[i]<=120){
+    my_list$placebo$status[i]<-"optimal"
+  } else if (my_list$placebo$post_bp[i]>130) {
+    my_list$placebo$status[i]<-"high"
+  } else {my_list$placebo$status[i]<-"borderline"
+  }
+}
+my_list$placebo$status
+```
+
+## Task 5: Function Writing
+### 1.Write a function that
+*takes in a list with two data frames in it
+```{r}
+take_in_list <- function(data_frame1,data_frame2){
+  list(treatmnet=data_frame1,placebo=data_frame2)
+}
+```
+
+*takes in an R function find a summary of a numeric column (default set to "mean")
+```{r}
+summary_mean <- function(column){
+  if(!is.numeric(column)){
+    stop("Not numeric column")
+  }
+  mean(column)
+}
+summary_mean(positive_change)
+```
+
+* find statistic of interest for the pre,post,diff columns of both data frames
+```{r}
+find_stat <- function(stat){
+  my_fun <-get(stat)
+  bp_pre<-my_fun(bp_df$pre_bp)
+  bp_post<-my_fun(bp_df$post_bp)
+  bp_diff<-my_fun(bp_df$diff_bp)
+  pla_pre<-my_fun(placebo_df$pre_bp)
+  pla_post<-my_fun(placebo_df$post_bp)
+  pla_diff<-my_fun(placebo_df$diff_bp)
+  return(list(bp_pre,bp_post,bp_diff,pla_pre,pla_post,pla_diff))
+  
+  #return six values as a named list
+  value_list<-find_stat(stat)
+  #create a vector of names
+   if (mean) {
+    vec_name=c(paste("mean","_",1:6,sep=''))
+  } else if (var) {
+   vec_name=c(paste("var","_",1:6,sep=''))
+  } else if (sd) {
+   vec_name=c(paste("sd","_",1:6,sep=''))
+  } else if (min) {
+   vec_name=c(paste("min","_",1:6,sep=''))
+  } else if (max) {
+   vec_name=c(paste("max","_",1:6,sep=''))
+  }
+  
+  #create a vector of stat values
+  vec_value<-c(value_list[1],value_list[2],value_list[3],
+               value_list[4],value_list[5],value_list[6])
+  #assign names() to the vector
+  names(vec_value)=c(vec_name)
+  
+}
+
+#apply function (var,sd,min,max)
+find_stat("mean")
+find_stat('var')
+find_stat('sd')
+find_stat("min")
+find_stat("max")
+```
+
+
+
