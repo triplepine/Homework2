@@ -1,6 +1,6 @@
 ---
 title: "Programming in Base R"
-format: html
+format: pdf
 editor: visual
 ---
 
